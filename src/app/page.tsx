@@ -1,5 +1,6 @@
 'use client'
 
+import Link from "next/link";
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { sb } from '@/lib/supabase-client'
@@ -37,7 +38,7 @@ export default function HomePage() {
         설치/연결 완료! 이제 <code>/people</code>/<code>/interactions</code> 페이지를 붙여가면 됩니다.
       </p>
       <p>
-        <a className="underline" href="/people">People 열기</a>
+        <Link className="underline" href="/people">People 열기</Link>
       </p>
       {msg && <p className="text-sm">{msg}</p>}
     </div>

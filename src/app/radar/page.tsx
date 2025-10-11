@@ -21,7 +21,7 @@ type Metric = {
 };
 
 export default function RadarPage(){
-  const supabase = sb();
+  const supabase = useMemo(() => sb(), []);
   const [people, setPeople] = useState<Person[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
 
@@ -42,7 +42,7 @@ export default function RadarPage(){
       setPeople((ppl||[]) as Person[]);
       setLogs((raw||[]) as Log[]);
     })();
-  }, []);
+  }, [supabase]);
 
   const metrics = useMemo<Metric[]>(() => {
     if (!people.length) return [];
@@ -99,21 +99,28 @@ export default function RadarPage(){
   }, [metrics]);
 
   // Recharts 데이터 포맷: [{metric: "Freq", "이름1": 80, "이름2": 40, ...}, ...]
-  const chartData = useMemo(() => {
-    const rows = [
-      { metric: "Frequency" } as any,
-      { metric: "Recency" } as any,
-      { metric: "Variety" } as any,
-      { metric: "Mood" } as any,
-    ];
-    for (const m of top){
-      rows[0][m.label] = Math.round(m.freq);
-      rows[1][m.label] = Math.round(m.recency);
-      rows[2][m.label] = Math.round(m.variety);
-      rows[3][m.label] = Math.round(m.moodAvg);
-    }
-    return rows;
-  }, [top]);
+  
+// 1) 차트 행 타입: metric은 string, 그 외 키들은 number를 넣을 예정이므로 union으로 완화
+type ChartRow = { metric: string } & Record<string, number | string>;
+
+const chartData = useMemo<ChartRow[]>(() => {
+  // 2) 초기엔 metric만 있으니 OK, 나중에 사람 이름 키로 숫자를 채워 넣음
+  const rows: ChartRow[] = [
+    { metric: "Frequency" },
+    { metric: "Recency" },
+    { metric: "Variety" },
+    { metric: "Mood" },
+  ];
+
+  for (const m of top) {
+    rows[0][m.label] = Math.round(m.freq);
+    rows[1][m.label] = Math.round(m.recency);
+    rows[2][m.label] = Math.round(m.variety);
+    rows[3][m.label] = Math.round(m.moodAvg);
+  }
+  return rows;
+}, [top]);
+
 
   if (!people.length) return <div className="p-6">사람 데이터를 불러오는 중…</div>;
 
