@@ -1,11 +1,13 @@
-'use client'
+"use client";
 
 import Link from "next/link";
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { sb } from '@/lib/supabase-client'
 
-export default function HomePage() {
+export const dynamic = 'force-dynamic';
+
+function HomeInner() {
   const router = useRouter()
   const sp = useSearchParams()
   const [msg, setMsg] = useState<string | null>(null)
@@ -43,4 +45,13 @@ export default function HomePage() {
       {msg && <p className="text-sm">{msg}</p>}
     </div>
   )
+}
+
+export default function HomePage() {
+  // useSearchParams()를 사용하는 HomeInner를 Suspense 경계 안에서 렌더
+  return (
+    <Suspense fallback={<div className="p-6 text-center">로딩…</div>}>
+      <HomeInner />
+    </Suspense>
+  );
 }

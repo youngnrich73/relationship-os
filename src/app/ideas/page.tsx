@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+
 import { sb } from "@/lib/supabase-client";
 import Link from "next/link"; // ✅ 추가
 
