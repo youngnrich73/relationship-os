@@ -1,5 +1,7 @@
 'use client';
 
+import Link from "next/link";   // ← 이 줄 추가
+
 import { useCallback, useEffect, useState } from "react";
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { sb } from "@/lib/supabase-client";
@@ -152,14 +154,31 @@ export default function PeopleClient() {
         {list.map((p) => (
           <div key={p.id} className="border rounded p-3 flex justify-between items-center">
             <div>
-              <div className="font-medium">{p.name}</div>
+              {/* 이름을 눌러도 상세로 이동하게 하려면 <Link>로 감싸도 됨 */}
+              <div className="font-medium">
+                <Link href={`/people/${p.id}`} className="underline">
+                  {p.name}
+                </Link>
+              </div>
+        
               {p.note && <div className="text-sm text-gray-600">{p.note}</div>}
+              <div className="text-xs text-gray-500">{new Date(p.created_at).toLocaleString()}</div>
             </div>
-            <button onClick={() => remove(p.id)} className="text-sm underline">
-              삭제
-            </button>
+        
+            <div className="flex items-center gap-3">
+              {/* '상세' 버튼 → 상세 페이지 링크 */}
+              <Link href={`/people/${p.id}`} className="text-sm underline">
+                상세
+              </Link>
+        
+              {/* 삭제 버튼 그대로 유지 */}
+              <button onClick={() => remove(p.id)} className="text-sm underline">
+                삭제
+              </button>
+            </div>
           </div>
         ))}
+
       </div>
 
       {msg && <p className="text-sm">{msg}</p>}

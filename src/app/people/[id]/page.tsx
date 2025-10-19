@@ -40,3 +40,4 @@ export default async function PersonDetail({ params }: { params: { id: string } 
     </div>
   );
 }
+
