@@ -24,7 +24,7 @@ export default function PeoplePage() {
     // ✅ 프로필 보장 (없으면 생성, 있으면 그대로)
     try {
       await supabase.from('profiles').upsert({ id: uid }).select().single()
-    } catch (_) {}
+    } catch { }
 
     const { data, error } = await supabase
       .from('people')
@@ -46,7 +46,7 @@ export default function PeoplePage() {
     // 혹시 모를 타이밍 이슈 대비: insert 전에도 한 번 더 보장
     try {
       await supabase.from('profiles').upsert({ id: me }).select().single()
-    } catch (_) {}
+    } catch { }
 
     const { error } = await supabase.from('people').insert({ user_id: me, label })
     if (error) { alert(error.message); return }
