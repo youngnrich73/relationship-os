@@ -1,4 +1,5 @@
 {
+  "engines": { "node": ">=20 <21" },
   "name": "relationship-os",
   "version": "0.1.0",
   "private": true,
