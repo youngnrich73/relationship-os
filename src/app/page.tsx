@@ -5,30 +5,49 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
-// UI 컴포넌트 (shadcn or custom)
+// UI
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-/**
- * 하이브리드 Supabase 클라이언트 로더
- * - 있으면: "@/lib/supabase-client" (예: sb() 또는 default() 같은 헬퍼)
- * - 없으면: "@supabase/supabase-js" 로 즉석 생성 (NEXT_PUBLIC_* 환경변수 필요)
- */
-async function getSupabaseClient() {
-  try {
-    const mod: any = await import("@/lib/supabase-client");
-    if (typeof mod?.sb === "function") return mod.sb();
-    if (typeof mod?.default === "function") return mod.default();
-    if (typeof mod?.createClient === "function") return mod.createClient();
-  } catch {
-    // 헬퍼 없으면 폴백으로 진행
+// 타입만 가져옴(런타임 영향 없음)
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** 안전한 key 함수 호출 헬퍼 (any 금지, unknown + 좁히기) */
+function callIfFn<R>(obj: unknown, key: string): R | null {
+  if (obj && typeof obj === "object" && key in (obj as Record<string, unknown>)) {
+    const val = (obj as Record<string, unknown>)[key];
+    if (typeof val === "function") {
+      return (val as (...args: unknown[]) => R)();
+    }
   }
+  return null;
+}
+
+/** supabase 클라이언트 생성(헬퍼가 있으면 우선 사용, 없으면 직접 생성) */
+async function getSupabaseClient(): Promise<SupabaseClient> {
+  // 1) 프로젝트 내부 헬퍼 우선 시도
+  try {
+    const mod: unknown = await import("@/lib/supabase-client");
+    // sb() / default() / createClient() 중 하나가 있으면 호출
+    const fromSb = callIfFn<SupabaseClient>(mod, "sb");
+    if (fromSb) return fromSb;
+
+    const fromDefault = callIfFn<SupabaseClient>(mod, "default");
+    if (fromDefault) return fromDefault;
+
+    const fromCreate = callIfFn<SupabaseClient>(mod, "createClient");
+    if (fromCreate) return fromCreate;
+  } catch {
+    // 모듈이 없으면 무시하고 폴백 진행
+  }
+
+  // 2) 폴백: 직접 생성
   const { createClient } = await import("@supabase/supabase-js");
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anon) {
     throw new Error(
-      "Supabase 환경변수가 없습니다. NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 설정을 확인하세요."
+      "Supabase 환경변수가 없습니다. NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 를 설정하세요."
     );
   }
   return createClient(url, anon);
@@ -46,6 +65,7 @@ function HomeInner() {
   const [status, setStatus] = useState<"idle" | "exchanging" | "done" | "error">("idle");
   const onceRef = useRef(false);
 
+  // URL에 토큰/코드 유무
   const hasAuthParams = useMemo(() => {
     const code = searchParams.get("code");
     const access = searchParams.get("access_token");
@@ -60,7 +80,7 @@ function HomeInner() {
     (async () => {
       try {
         if (!hasAuthParams) {
-          // 이미 로그인된 세션이 있으면 바로 /people
+          // 이미 로그인 상태면 /people로
           const supabase = await getSupabaseClient();
           const { data } = await supabase.auth.getSession();
           if (data?.session) router.replace("/people");
@@ -70,24 +90,29 @@ function HomeInner() {
         setStatus("exchanging");
         const supabase = await getSupabaseClient();
 
-        try {
-          // @ts-ignore - 존재하면 사용
-          if (typeof supabase.auth.exchangeCodeForSession === "function") {
-            // @ts-ignore
-            await supabase.auth.exchangeCodeForSession(window.location.href);
-          } else {
-            const { data } = await supabase.auth.getSession();
-            if (!data?.session) throw new Error("세션 교환 API 없음");
-          }
-        } catch (e) {
-          const { data } = await supabase.auth.getSession();
-          if (!data?.session) throw e;
+        // exchangeCodeForSession 유무 안전 체크(타입가드)
+        const authObj = supabase.auth as unknown as {
+          exchangeCodeForSession?: (url: string) => Promise<unknown>;
+          getSession: () => Promise<{ data: { session: unknown } }>;
+        };
+
+        let exchanged = false;
+        if (typeof authObj.exchangeCodeForSession === "function") {
+          await authObj.exchangeCodeForSession(window.location.href);
+          exchanged = true;
         }
 
+        // 일부 세팅은 위 단계가 없어도 세션 잡힐 수 있음 → 재확인
+        const { data } = await authObj.getSession();
+        if (!data?.session) {
+          if (!exchanged) throw new Error("세션 교환 실패");
+        }
+
+        // (선택) 최초 로그인 부트스트랩
         try {
           await fetch("/api/bootstrap", { method: "POST" });
         } catch {
-          // 선택 로직: 실패해도 치명적 아님
+          // 없어도 진행
         }
 
         setStatus("done");
@@ -117,7 +142,7 @@ function HomeInner() {
       <section>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Top 5 제안</h2>
-          {/* variant는 "ghost"나 "default"만 허용됨 / asChild 미지원 → router.push 사용 */}
+          {/* variant는 "default" | "ghost"만; 라우팅은 onClick으로 */}
           <Button variant="ghost" onClick={() => router.push("/people")}>
             People 바로가기
           </Button>
@@ -131,7 +156,6 @@ function HomeInner() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm mb-3">{s.body}</p>
-                {/* asChild 없이 클릭 핸들러로 이동 */}
                 <Button className="w-full" onClick={() => router.push("/people")}>
                   지금 실행
                 </Button>
