@@ -30,18 +30,35 @@ function HomeInner(){
     if (!hasAuthParams || once.current) return;
     once.current = true;
     (async ()=>{
-      try{
-        setStatus("exchanging");
-        const sb = await getSupabaseClient();
-        const any = sb.auth as any;
-        if (typeof any.exchangeCodeForSession === "function"){
-          await any.exchangeCodeForSession(window.location.href);
-        }
-        setStatus("done");
-        router.replace("/people");
-      }catch{
-        setStatus("error");
-      }
+     try {
+       setStatus("exchanging");
+       const sb = await getSupabaseClient();
+     
+       // ✅ 'any' 금지: 필요한 메서드만 가진 타입을 좁혀서 사용
+       type AuthLite = {
+         exchangeCodeForSession?: (url: string) => Promise<unknown>;
+         getSession: () => Promise<{ data: { session: unknown } }>;
+       };
+     
+       const auth = sb.auth as unknown as AuthLite;
+     
+       if (typeof auth.exchangeCodeForSession === "function") {
+         await auth.exchangeCodeForSession(window.location.href);
+       }
+     
+       const { data } = await auth.getSession();
+     
+       if (!data?.session) {
+         // (선택) 교환 불가 시에도 세션이 없으면 오류로 처리
+         throw new Error("세션 교환 실패");
+       }
+     
+       setStatus("done");
+       router.replace("/people");
+     } catch {
+       setStatus("error");
+     }
+
     })();
   },[hasAuthParams, router]);
 
