@@ -1,6 +1,39 @@
+/* === 색상 토큰 (Tailwind보다 먼저) === */
+:root{
+  --color-primary:#FF7366;
+  --color-secondary:#6AC2E3;
+  --color-neutral:#F5F5F2;
+  --color-warning:#FFB547;
+
+  --background:#ffffff;
+  --foreground:#111827;
+
+  --card:#ffffff;
+  --card-foreground:#111827;
+  --muted:#f3f4f6;
+  --muted-foreground:#6b7280;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --background:#0a0a0a;
+    --foreground:#e5e7eb;
+    --card:#0f1115;
+    --card-foreground:#e5e7eb;
+    --muted:#111827;
+    --muted-foreground:#9ca3af;
+  }
+}
+
+
+/* Tailwind 레이어 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 기본 바탕/글자 */
+html,body{background:var(--background);color:var(--foreground);}
+*{font-synthesis-weight:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
 :root {
   --color-primary: #FF7366;
