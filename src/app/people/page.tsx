@@ -1,4 +1,6 @@
 'use client'
+import { Button } from "@/components/ui/button";
+
 import { useEffect, useState } from 'react'
 import { sb } from '@/lib/supabase-client'
 import Link from 'next/link'
@@ -60,34 +62,48 @@ export default function PeoplePage() {
     window.location.href = '/signin'
   }
 
-  if (!me) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-xl font-semibold">People</h1>
-        <p className="text-sm">로그인이 필요합니다.</p>
-        <Link className="px-3 py-2 bg-black text-white rounded text-sm" href="/signin">Sign in</Link>
-      </div>
-    )
-  }
+if (!me) {
+  return (
+    <div className="space-y-3">
+      <h1 className="text-2xl font-bold">People</h1>
+      <p className="text-sm text-gray-600">로그인이 필요합니다.</p>
+      <Link href="/signin" className="inline-block">
+        {/* 주 색상을 사용한 버튼 */}
+        <Button className="text-sm">Sign in</Button>
+      </Link>
+    </div>
+  );
+}
+
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">사람 관리</h1>
-        <button onClick={signOut} className="text-sm px-3 py-2 border rounded">로그아웃</button>
-      </div>
+    <div className="flex items-center justify-between">
+      <h1 className="text-2xl font-bold">사람 관리</h1>
+      <Button variant="ghost" onClick={signOut} className="text-sm">
+        로그아웃
+      </Button>
+    </div>
 
-      <form onSubmit={addPerson} className="flex items-center gap-2">
-        <input
-          className="border rounded px-3 py-2 flex-1"
-          placeholder="이름/호칭 (예: 엄마, 민수, 팀장님)"
-          value={label}
-          onChange={(e)=>setLabel(e.target.value)}
-          required
-        />
-        <button className="px-3 py-2 rounded bg-black text-white" type="submit">추가</button>
-        <button type="button" onClick={load} className="px-3 py-2 border rounded">새로고침</button>
-      </form>
+
+<form onSubmit={addPerson} className="flex items-center gap-2">
+  <input
+    className="border border-gray-300 rounded px-3 py-2 flex-1"
+    placeholder="이름/호칭 (예: 엄마, 민수, 팀장님)"
+    value={label}
+    onChange={(e) => setLabel(e.target.value)}
+    required
+  />
+  <Button type="submit">추가</Button>
+  <Button
+    type="button"
+    variant="ghost"
+    onClick={load}
+  >
+    새로고침
+  </Button>
+</form>
+
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       {loading ? (

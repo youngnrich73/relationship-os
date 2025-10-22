@@ -64,57 +64,44 @@ function HomeInner() {
     return Boolean(code || access || refresh);
   }, [searchParams]);
 
-  useEffect(() => {
-    if (onceRef.current) return;
-    onceRef.current = true;
+// Home 페이지의 useEffect 수정 – 로그인 콜백 처리 시에만 동작
+useEffect(() => {
+  if (!hasAuthParams) return; // URL에 인증 매개변수가 없으면 홈을 그대로 보여줍니다.
+  (async () => {
+    try {
+      setStatus("exchanging");
+      const supabase = await getSupabaseClient();
 
-    (async () => {
-      try {
-        if (!hasAuthParams) {
-          // 이미 로그인되어 있으면 바로 people로
-          const supabase = await getSupabaseClient();
-          const { data } = await supabase.auth.getSession();
-          if (data?.session) {
-            router.replace("/people");
-          }
-          return;
-        }
+      const authAny = supabase.auth as unknown as {
+        exchangeCodeForSession?: (url: string) => Promise<unknown>;
+        getSession: () => Promise<{ data: { session: unknown } }>;
+      };
 
-        setStatus("exchanging");
-        const supabase = await getSupabaseClient();
-
-        // exchangeCodeForSession 유무에 따라 세션 교환
-        const authAny = supabase.auth as unknown as {
-          exchangeCodeForSession?: (url: string) => Promise<unknown>;
-          getSession: () => Promise<{ data: { session: unknown } }>;
-        };
-
-        let exchanged = false;
-        if (typeof authAny.exchangeCodeForSession === "function") {
-          await authAny.exchangeCodeForSession(window.location.href);
-          exchanged = true;
-        }
-
-        const { data } = await authAny.getSession();
-        if (!data?.session) {
-          if (!exchanged) throw new Error("세션 교환 실패");
-        }
-
-        // (선택) 최초 로그인 부트스트랩
-        try {
-          await fetch("/api/bootstrap", { method: "POST" });
-        } catch {
-          /* 없어도 진행 */
-        }
-
-        setStatus("done");
-        router.replace("/people");
-      } catch (e) {
-        console.error(e);
-        setStatus("error");
+      let exchanged = false;
+      if (typeof authAny.exchangeCodeForSession === "function") {
+        await authAny.exchangeCodeForSession(window.location.href);
+        exchanged = true;
       }
-    })();
-  }, [hasAuthParams, router]);
+
+      const { data } = await authAny.getSession();
+      if (!data?.session && !exchanged) {
+        throw new Error("세션 교환 실패");
+      }
+      // (선택) 최초 로그인 시 부트스트랩 API 호출
+      try {
+        await fetch("/api/bootstrap", { method: "POST" });
+      } catch {}
+
+      setStatus("done");
+      // 세션이 준비된 후에는 People 화면으로 이동
+      router.replace("/people");
+    } catch (e) {
+      console.error(e);
+      setStatus("error");
+    }
+  })();
+}, [hasAuthParams, router]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">

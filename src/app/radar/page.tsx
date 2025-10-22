@@ -6,6 +6,14 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip
 } from "recharts";
 
+const palette = [
+  'var(--color-primary)',
+  'var(--color-secondary)',
+  'var(--color-warning)',
+  '#A78BFA',
+  '#FB923C',
+];
+
 type Person = { id: string; label: string };
 type Log = {
   id: string; person_id: string; happened_at: string;
@@ -144,9 +152,9 @@ const chartData = useMemo<ChartRow[]>(() => {
                 key={m.person_id}
                 name={m.label}
                 dataKey={m.label}
-                stroke="#000"
-                fillOpacity={0.15 + (idx*0.1)}
-                fill="#000"
+                stroke={palette[idx % palette.length]}
+                fill={palette[idx % palette.length]}
+                fillOpacity={0.2 + idx * 0.1}
               />
             ))}
           </RadarChart>

@@ -11,7 +11,18 @@ export default async function PersonDetail({ params }: { params: { id: string } 
     .eq("id", params.id)
     .single();
 
-  if (!person) return notFound();
+  // 사람을 찾지 못한 경우
+if (!person) {
+  return (
+    <div className="mx-auto max-w-3xl p-4">
+      <h1 className="text-xl font-semibold">존재하지 않는 인물입니다.</h1>
+      <p className="mt-2 text-sm text-gray-500">
+        해당 사람을 찾을 수 없습니다. 목록에서 다시 선택해 주세요.
+      </p>
+    </div>
+  );
+}
+
 
   // 타임라인: 최신순
   const { data: logs } = await supabase

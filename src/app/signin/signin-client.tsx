@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
 import { sb } from "@/lib/supabase-client";
 
 export default function SignInClient() {
@@ -35,7 +37,7 @@ export default function SignInClient() {
           placeholder="이메일 주소"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded p-2"
+          className="w-full border border-gray-300 rounded p-2"
         />
         <button
           type="submit"
