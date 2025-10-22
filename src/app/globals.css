@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #FF7366;
+  --color-secondary: #6AC2E3;
+  --color-neutral: #F5F5F2;
+  --color-warning: #FFB547;
+}
+
+body {
+  background-color: var(--color-neutral);
+  color: #222;
+}
+
+
 /* ========== 관계OS 전역 토큰 ========== */
 /* 라이트 모드 기본값 */
 :root {

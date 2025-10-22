@@ -13,5 +13,8 @@ export function Button({ className, variant = "default", ...props }: Props) {
     variant === "ghost"
       ? "bg-transparent hover:bg-gray-100 text-gray-900"
       : "bg-primary text-white hover:opacity-90";
-  return <button className={cn(base, styles, className)} {...props} />;
+  return <button className="bg-primary text-white hover:bg-primary/90 transition">
+  시작하기
+</button>
+
 }
